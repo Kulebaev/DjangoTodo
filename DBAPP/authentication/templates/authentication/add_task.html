@@ -1,0 +1,12 @@
+{% extends 'authentication/base.html' %}
+
+{% block title %}Добавить задачу{% endblock %}
+
+{% block content %}
+<h1>Добавить задачу</h1>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Добавить</button>
+</form>
+{% endblock %}

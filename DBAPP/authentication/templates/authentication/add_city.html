@@ -1,0 +1,20 @@
+{% extends 'authentication/base.html' %}
+
+{% block title %}Добавить город{% endblock %}
+
+{% block content %}
+<h1>Добавить город</h1>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Добавить</button>
+</form>
+
+{% if error_message %}
+<p>{{ error_message }}</p>
+{% endif %}
+
+{% if success_message %}
+<p>{{ success_message }}</p>
+{% endif %}
+{% endblock %}

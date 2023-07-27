@@ -1,0 +1,129 @@
+{% extends 'authentication/base.html' %} 
+{% load static %}
+{% load l10n %} 
+{% block title %}Главная страница{% endblock %} 
+{% block content %}
+<h1>Добро пожаловать на главную страницу!!!</h1>
+<a href="{% url 'add_city' %}">Добавить город</a>
+<!-- Ссылка для перехода на страницу создания города -->
+<a href="{% url 'add_task' %}">Добавить дело</a>
+<!-- Ссылка для перехода на страницу создания задачи -->
+
+<p>Фильтр по пользователю и задачам:</p>
+<form id="taskFilterForm" method="post">
+    {% csrf_token %}
+
+    <select name="user">
+        <option value="">Все пользователи</option>
+        {% for user in users %}
+            <option value="{{ user.id }}" {% if user_filter == user.id %}selected{% endif %}>{{ user.username }}</option>
+        {% endfor %}
+    </select>
+    <select name="filter">
+        <option value="all" {% if not user_filter or user_filter == 'all' %}selected{% endif %}>Показать все задачи</option>
+        <option value="completed" {% if user_filter == 'completed' %}selected{% endif %}>Показать только выполненные задачи</option>
+        <option value="not_completed" {% if user_filter == 'not_completed' %}selected{% endif %}>Показать только не выполненные задачи</option>
+        <option value="deleted" {% if user_filter == 'deleted' %}selected{% endif %}>Показать удаленные задачи</option>
+    </select>
+    <button type="submit">Применить</button>
+</form>
+<p>Таблица</p>
+<table>
+    <thead>
+        <tr>
+            <th>Выбрать задачу</th>
+            <th>Дата</th>
+            <th>Город</th>
+            <th>Пользователь</th>
+            <th>Комментарий</th>
+            <th>Выполнено</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for task in tasks %}
+        <tr>
+            <td>
+                <input type="checkbox" name="completed" value="{{ task.id }}">
+            </td>
+            <td>{{ task.date|date:"d.m.Y" }}</td>
+            <td>{{ task.city }}</td>
+            <td>{{ task.user }}</td>
+            <td>{{ task.comment }}</td>
+            <td>{% if task.completed %} <p>☑</p> {% else %} <p>☐</p> {% endif %}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+<button type="button" onclick="completeSelectedTasks()" {% if not user.is_authenticated %}disabled{% endif %}>Выполнить выбранные задачи</button>
+<button type="button" onclick="deleteSelectedTasks()" {% if not user.is_authenticated %}disabled{% endif %}>Удалить выбранные задачи</button>
+
+
+<script>
+function completeSelectedTasks() {
+    const checkboxes = document.querySelectorAll('input[name="completed"]:checked');
+    const taskIds = Array.from(checkboxes).map(checkbox => checkbox.value);
+  
+    // Отправляем AJAX-запрос для обновления выполнения выбранных задач
+    fetch("/complete_selected_tasks/", {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": "{{ csrf_token }}",
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        task_ids: taskIds,
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          console.error("Ошибка при обновлении выполнения задач.");
+        } else {
+          // Uncheck all the checkboxes after completing tasks
+          checkboxes.forEach((checkbox) => {
+            checkbox.checked = false;
+          });
+          // Если запрос выполнен успешно, перезагружаем страницу для обновления данных
+          window.location.reload();
+        }
+      })
+      .catch((error) => {
+        console.error("Произошла ошибка.", error);
+      });
+  }
+
+  function deleteSelectedTasks() {
+    const checkboxes = document.querySelectorAll('input[name="completed"]:checked');
+    const taskIds = Array.from(checkboxes).map(checkbox => checkbox.value);
+
+    // Отправляем AJAX-запрос для удаления выбранных задач
+    fetch("/delete_selected_tasks/", {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": "{{ csrf_token }}",
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        task_ids: taskIds,
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          console.error("Ошибка при удалении задач.");
+        } else {
+            checkboxes.forEach((checkbox) => {
+            checkbox.checked = false;
+          });
+          // Если запрос выполнен успешно, перезагружаем страницу для обновления данных
+          window.location.reload();
+        }
+      })
+      .catch((error) => {
+        console.error("Произошла ошибка.", error);
+      });
+  }
+</script>
+{% endblock %}
